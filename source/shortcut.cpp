@@ -5,7 +5,7 @@
  * XS interface to the Win32 IShellLink Interface
  * based on Registry.CPP written by Jesse Dougherty
  *
- * Version: 0.01 15 Jan 97
+ * Version: 0.03 07 Apr 97
  *
  */
 
@@ -23,41 +23,13 @@
 #define MAX_LENGTH 2048
 #define TMPBUFSZ 1024
 
-// VALUES FILLED IN BY PerlCallback
-// DWORD status=-1;
-// static CPerl* myPerl;
-
-static time_t ft2timet(FILETIME *ft)
-{
-	SYSTEMTIME st;
-	struct tm tm;
-
-	FileTimeToSystemTime(ft, &st);
-	tm.tm_sec = st.wSecond;
-	tm.tm_min = st.wMinute;
-	tm.tm_hour = st.wHour;
-	tm.tm_mday = st.wDay;
-	tm.tm_mon = st.wMonth - 1;
-	tm.tm_year = st.wYear - 1900;
-	tm.tm_wday = st.wDayOfWeek;
-	tm.tm_yday = -1;
-	tm.tm_isdst = -1;
-	return mktime (&tm);
-}
-
-#define SUCCESSRETURNED(x)	(x == ERROR_SUCCESS)
-#define INETRETURN(x) XSRETURN_IV(SUCCESSRETURNED(x))
-
 #define SETIV(index,value) sv_setiv(ST(index), value)
 #define SETPV(index,string) sv_setpv(ST(index), string)
 #define SETPVN(index, buffer, length) sv_setpvn(ST(index), (char*)buffer, length)
-#define SETHKEY(index, hkey)	SETIV(index,(long)hkey)
 
 #define NEW(x,v,n,t)  (v = (t*)safemalloc((MEM_SIZE)((n) * sizeof(t))))
 #define PERLSvIV(sv) (SvIOK(sv) ? SvIVX(sv) : sv_2iv(sv))
 #define PERLSvPV(sv, lp) (SvPOK(sv) ? ((lp = SvCUR(sv)), SvPVX(sv)) : sv_2pv(sv, &lp))
-
-#define SvHKEY(index) (HKEY)((unsigned long) PERLSvIV(index))
 
 #define PERLPUSHMARK(p) if (++markstack_ptr == markstack_max)	\
 			markstack_grow();			\
@@ -325,13 +297,15 @@ XS(XS_NT__Shortcut_GetDescription) {
 	HRESULT hres;
 	IShellLink* ilink=(IShellLink*) PERLSvIV(ST(0));
 	IPersistFile* ifile=(IPersistFile*) PERLSvIV(ST(1));
-	char *description[1024];
+	char *description = (char *)safemalloc(1024);
 
 	hres=ilink->GetDescription((LPSTR) description, 1024);
 	if(SUCCEEDED(hres)) {
 		ST(0)=sv_2mortal(newSVpv((LPSTR) description,0));
+		safefree((char *)description);
 		XSRETURN(1);
 	} else {
+		safefree((char *)description);
 		XSRETURN_NO;
 	}
 }
@@ -370,14 +344,16 @@ XS(XS_NT__Shortcut_GetPath) {
 	HRESULT hres;
 	IShellLink* ilink=(IShellLink*) PERLSvIV(ST(0));
 	IPersistFile* ifile=(IPersistFile*) PERLSvIV(ST(1));
-	char *path[MAX_PATH];
+	char *path = (char *)safemalloc(MAX_PATH);
 	WIN32_FIND_DATA file;
 
 	hres=ilink->GetPath((LPSTR) path, MAX_PATH, &file, (DWORD) PERLSvIV(ST(2)));
 	if(SUCCEEDED(hres)) {
 		ST(0)=sv_2mortal(newSVpv((LPSTR) path,0));
+		safefree((char *)path);
 		XSRETURN(1);
 	} else {
+		safefree((char *)path);
 		XSRETURN_NO;
 	}
 }
@@ -415,13 +391,15 @@ XS(XS_NT__Shortcut_GetArguments) {
 	HRESULT hres;
 	IShellLink* ilink=(IShellLink*) PERLSvIV(ST(0));
 	IPersistFile* ifile=(IPersistFile*) PERLSvIV(ST(1));
-	char *arguments[1024];
+	char *arguments = (char *)safemalloc(1024);
 
 	hres=ilink->GetArguments((LPSTR) arguments, 1024);
 	if(SUCCEEDED(hres)) {
 		ST(0)=sv_2mortal(newSVpv((LPSTR) arguments,0));
+		safefree((char *)arguments);
 		XSRETURN(1);
 	} else {
+		safefree((char *)arguments);
 		XSRETURN_NO;
 	}
 }
@@ -460,13 +438,15 @@ XS(XS_NT__Shortcut_GetWorkingDirectory) {
 	HRESULT hres;
 	IShellLink* ilink=(IShellLink*) PERLSvIV(ST(0));
 	IPersistFile* ifile=(IPersistFile*) PERLSvIV(ST(1));
-	char *dir[MAX_PATH];
+	char *dir = (char *)safemalloc(MAX_PATH);
 
 	hres=ilink->GetWorkingDirectory((LPSTR) dir, MAX_PATH);
 	if(SUCCEEDED(hres)) {
 		ST(0)=sv_2mortal(newSVpv((LPSTR) dir,0));
+		safefree((char *)dir);
 		XSRETURN(1);
 	} else {
+		safefree((char *)dir);
 		XSRETURN_NO;
 	}
 }
@@ -596,16 +576,18 @@ XS(XS_NT__Shortcut_GetIconLocation) {
 	IShellLink* ilink=(IShellLink*) PERLSvIV(ST(0));
 	IPersistFile* ifile=(IPersistFile*) PERLSvIV(ST(1));
 	int number;
-	LPSTR *location[MAX_PATH];
+	char *location = (char *)safemalloc(MAX_PATH);
 
-	hres=ilink->GetIconLocation((LPSTR)&location, MAX_PATH, &number);
+	hres=ilink->GetIconLocation((LPSTR)location, MAX_PATH, &number);
 	if(SUCCEEDED(hres)) {
 		// [dada] does actually returns nothing?
 		// printf("_GetIconLocation: location=\"%s\",%d\n",location,number);
 		ST(0)=sv_2mortal(newSVpv((LPSTR)location,0));
 		ST(1)=sv_2mortal(newSViv(number));
+		safefree((char *)location);
 		XSRETURN(2);
 	} else {
+		safefree((char *)location);
 		XSRETURN_NO;
 	}
 }
@@ -620,21 +602,23 @@ XS(XS_NT__Shortcut_Resolve) {
 	}
 
 	HRESULT hres;
-	IShellLink* ilink=(IShellLink*) PERLSvIV(ST(0));
-	IPersistFile* ifile=(IPersistFile*) PERLSvIV(ST(1));
+	IShellLink* ilink = (IShellLink*) PERLSvIV(ST(0));
+	IPersistFile* ifile = (IPersistFile*) PERLSvIV(ST(1));
 
 	// [dada] hwnd=NULL, not sure about it...
-	hres=ilink->Resolve(NULL, PERLSvIV(ST(2)));
+	hres = ilink->Resolve(NULL, PERLSvIV(ST(2)));
 
 	if(SUCCEEDED(hres)) {
-		char *path[MAX_PATH];
+		char *path = (char *)safemalloc(MAX_PATH);
 		WIN32_FIND_DATA file;
-		
-		hres=ilink->GetPath((LPSTR) path, MAX_PATH, &file, 0);
+
+		hres = ilink->GetPath((LPSTR)path, MAX_PATH, &file, 0);
 		if(SUCCEEDED(hres)) {
-			ST(0)=sv_2mortal(newSVpv((LPSTR) path,0));
+			ST(0) = sv_2mortal(newSVpv((LPSTR)path, 0));
+			safefree((char *)path);
 			XSRETURN(1);
 		} else {
+			safefree((char *)path);
 			XSRETURN_NO;
 		}
 	} else {

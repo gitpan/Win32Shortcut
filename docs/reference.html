@@ -35,16 +35,16 @@ Basically, you can do 2 things:
 For the rest, the object can be accessed as it were a normal associative array reference. 
 It has the following keys (here referred as <A HREF="#Properties">properties</A>):
 </FONT><PRE>
-  $LINK->{'File'}
-  $LINK->{'Path'}
+  $LINK->{'File'}               
+  $LINK->{'Path'}               $LINK->Path()
   $LINK->{'ShortPath'}
-  $LINK->{'WorkingDirectory'}
-  $LINK->{'Arguments'}
-  $LINK->{'Description'}
-  $LINK->{'ShowCmd'}
-  $LINK->{'Hotkey'}
-  $LINK->{'IconLocation'}
-  $LINK->{'IconNumber'}
+  $LINK->{'WorkingDirectory'}   $LINK->WorkingDirectory()
+  $LINK->{'Arguments'}          $LINK->Arguments()
+  $LINK->{'Description'}        $LINK->Description()
+  $LINK->{'ShowCmd'}            $LINK->ShowCmd()
+  $LINK->{'Hotkey'}             $LINK->Hotkey()
+  $LINK->{'IconLocation'}       $LINK->IconLocation()
+  $LINK->{'IconNumber'}         $LINK->IconNumber()
 </PRE><FONT FACE=Arial SIZE=2>
 
 Thus, assuming you have a shortcut file named 
@@ -124,6 +124,10 @@ can be collapsed to:
     the Win32::Shortcut objects are automatically closed when the program ends (or when you
     elsehow destroy such an object).
     <BR>
+    Note also that a shortcut is not automatically saved when it is closed, 
+    even if you modified it. You have to call <A HREF="#Save">Save</A> in order to
+    apply modifications to a shortcut file.
+    <BR>
     Example:</FONT>
 <PRE> $LINK->Close();</PRE>
 <P>
@@ -141,15 +145,15 @@ can be collapsed to:
     <BR>
     Example:</FONT><PRE> $LINK->Load("test.lnk") or print "test.lnk not found!";
     
- print join("\n",$LINK->{'Path'}, 
-                 $LINK->{'ShortPath'}, 
-                 $LINK->{'Arguments'}, 
-                 $LINK->{'WorkingDirectory'},
-                 $LINK->{'Description'},
-                 $LINK->{'ShowCmd'},
-                 $LINK->{'Hotkey'},
-                 $LINK->{'IconLocation'},
-                 $LINK->{'IconNumber'});
+ print join("\n", $LINK->Path, 
+                  $LINK->ShortPath, 
+                  $LINK->Arguments, 
+                  $LINK->WorkingDirectory,
+                  $LINK->Description,
+                  $LINK->ShowCmd,
+                  $LINK->Hotkey,
+                  $LINK->IconLocation,
+                  $LINK->IconNumber);
  }</PRE>
 <P>
 
@@ -187,10 +191,10 @@ can be collapsed to:
     <BR>
     Example:</FONT>
 <PRE> # if the target doesn't exist...
- if(! -f $LINK->{'Path'}) {
+ if(! -f $LINK->Path) {
 
    # save the actual target for comparison
-   $oldpath = $LINK->{'Path'};
+   $oldpath = $LINK->Path;
 
    # try to resolve it (with dialog box)
    $newpath = $LINK->Resolve(0); 
@@ -214,7 +218,7 @@ can be collapsed to:
     A true value will be returned if everything was successful.
     <BR>
     Example:</FONT><PRE> $LINK->Save();
- $LINK->Save("Copy of ".$LINK->{'File'});</PRE>
+ $LINK->Save("Copy of " . $LINK->{'File'});</PRE>
 <P>
 
 
@@ -239,14 +243,14 @@ can be collapsed to:
             1);
 
  # it is the same of...
- $LINK->{'Path'}="C:\PERL5\BIN\PERL.EXE";
- $LINK->{'Arguments'}="-v";
- $LINK->{'WorkingDirectory'}="C:\PERL5\BIN";
- $LINK->{'Description'}="Prints out the version of Perl";
- $LINK->{'ShowCmd'}=SW_SHOWMAXIMIZED;
- $LINK->{'Hotkey'}=hex('0x0337');
- $LINK->{'IconLocation'}="C:\WINDOWS\SYSTEM\COOL.DLL";
- $LINK->{'IconNumber'}=1;</PRE>
+ $LINK->Path("C:\PERL5\BIN\PERL.EXE");
+ $LINK->Arguments("-v");
+ $LINK->WorkingDirectory("C:\PERL5\BIN");
+ $LINK->Description("Prints out the version of Perl");
+ $LINK->ShowCmd(SW_SHOWMAXIMIZED);
+ $LINK->Hotkey(hex('0x0337'));
+ $LINK->IconLocation("C:\WINDOWS\SYSTEM\COOL.DLL");
+ $LINK->IconNumber(1);</PRE>
 <P>
 
 </DL>
@@ -413,7 +417,7 @@ Those constants are the allowed values for the <A HREF="#ShowCmd">ShowCmd</A> pr
 <HR>
 
 <FONT FACE=Arial SIZE=1>
-25 Jan 1997, Aldo Calpini 
+08 Apr 1997, Aldo Calpini 
 &lt;<A HREF="mailto:dada@divinf.it">dada@divinf.it</A>&gt;
 </FONT><P>
 
